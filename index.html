@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Splendor Duel</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='44' fill='%23e9b93a'/><path d='M50 18 76 42 50 84 24 42z' fill='%23d6463a'/><path d='M24 42h52L50 84z' fill='%23a3271d'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Cinzel:wght@700;900&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+:root{
+  --bg:#f4efe6; --panel:#fffdf8; --ink:#2a2233; --muted:#7d7688; --line:#e5dccd;
+  --navy:#3a2a5c; --navy-d:#24183d; --green:#2f8a5b; --green-d:#1f6441; --gold:#e0a53a; --gold-d:#ad7a1d; --red:#c8453a;
+  --g0:#f3efe4; --g0b:#b8af9b; --g1:#2f6fd6; --g1b:#1d4c9e; --g2:#2f9a5b; --g2b:#1d6a3d; --g3:#d6463a; --g3b:#9a2a20;
+  --g4:#30303c; --g4b:#111118; --g5:#f6dfea; --g5b:#c792ad; --g6:#ecbd3c; --g6b:#a77d13;
+  --cell:46px; --cw:88px; --radius:16px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:"Baloo 2",system-ui,"Segoe UI",sans-serif;color:var(--ink);
+  background:
+    radial-gradient(circle at 0 0,rgba(214,70,58,.12) 0,transparent 40%),
+    radial-gradient(circle at 100% 100%,rgba(47,111,214,.13) 0,transparent 45%),
+    var(--bg);
+  background-attachment:fixed;
+}
+button{font-family:inherit;cursor:pointer}
+.hidden{display:none!important}
+
+/* ---------- Lobby ---------- */
+#lobby{min-height:100vh;display:grid;place-items:center;padding:24px 16px}
+.lobby-card{
+  width:100%;max-width:430px;background:var(--panel);border-radius:28px;padding:26px 24px;
+  box-shadow:0 14px 40px rgba(58,42,92,.16);text-align:center;border:3px solid var(--line);
+}
+.logo{display:flex;justify-content:center;gap:6px}
+.logo .gem{--s:30px}
+h1{margin:10px 0 0;font-family:"Cinzel",serif;font-weight:900;font-size:2.4rem;line-height:1;color:var(--navy)}
+.tag{color:var(--muted);margin:4px 0 16px}
+label{display:block;text-align:left;font-weight:700;font-size:.95rem;margin:12px 0 4px}
+input{
+  width:100%;font:inherit;font-size:1.05rem;padding:10px 14px;border-radius:12px;
+  border:2px solid var(--line);background:#fff;color:var(--ink);outline:none;
+}
+input:focus{border-color:var(--navy)}
+#codeInput{text-transform:uppercase;letter-spacing:4px;text-align:center;font-weight:800}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:14px;
+  padding:10px 16px;font-size:1.02rem;font-weight:800;color:#fff;background:var(--navy);
+  box-shadow:0 4px 0 var(--navy-d);transition:transform .08s, box-shadow .08s;
+}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--navy-d)}
+.btn.green{background:var(--green);box-shadow:0 4px 0 var(--green-d)}
+.btn.gold{background:var(--gold);box-shadow:0 4px 0 var(--gold-d)}
+.btn.red{background:var(--red);box-shadow:0 4px 0 #8e2a22}
+.btn.ghost{background:#fff;color:var(--ink);border:2px solid var(--line);box-shadow:none;padding:6px 12px;font-size:.95rem}
+.btn.sm{padding:6px 12px;font-size:.92rem;border-radius:11px}
+.btn.on{outline:3px solid var(--gold);outline-offset:1px}
+.btn:disabled{opacity:.45;cursor:default;transform:none}
+.row{display:flex;gap:10px;margin-top:14px}
+.row>*{flex:1}
+.or{margin:18px 0 0;color:var(--muted);display:flex;align-items:center;gap:10px}
+.or:before,.or:after{content:"";flex:1;height:2px;background:var(--line)}
+.msg{min-height:1.4em;margin-top:12px;color:var(--red);font-weight:700}
+.waiting .code{
+  font-size:2.6rem;font-weight:800;letter-spacing:8px;color:var(--navy);
+  background:#efeaf7;border:3px dashed var(--navy);border-radius:18px;padding:6px 10px;margin:10px 0;
+}
+.waiting .link{font-size:.85rem;word-break:break-all;color:var(--muted);margin:8px 0}
+.dots:after{content:"";animation:dots 1.4s steps(4) infinite}
+@keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+
+/* ---------- Game ---------- */
+#game{max-width:1260px;margin:0 auto;padding:10px 16px 24px}
+header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+header .title{font-family:"Cinzel",serif;font-weight:900;font-size:1.5rem;color:var(--navy);line-height:1}
+header .info{font-weight:700;color:var(--muted);font-size:.95rem}
+header .info b{color:var(--ink)}
+header .sp{flex:1}
+.turnChip{padding:4px 12px;border-radius:999px;font-weight:800;background:#eceaf2;color:var(--muted)}
+.turnChip.me{background:var(--green);color:#fff;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 5px rgba(47,138,91,.2)}}
+.panel{background:var(--panel);border:2px solid var(--line);border-radius:var(--radius);padding:12px 14px;box-shadow:0 6px 18px rgba(58,42,92,.06);min-width:0}
+.ptitle{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.05rem;margin-bottom:8px;flex-wrap:wrap}
+.ptitle .sub{font-weight:600;color:var(--muted);font-size:.9rem}
+.ptitle .sp{flex:1}
+.small{font-size:.85rem;color:var(--muted);font-weight:600}
+.top{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:start}
+.prompt{
+  background:#f1ecfa;border:2px solid #d8cdef;border-radius:12px;padding:8px 12px;font-weight:700;margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:46px
+}
+.prompt.me{background:#e9f6ee;border-color:#a9dcbe}
+.prompt .acts{display:flex;gap:6px;flex-wrap:wrap}
+.lastMove{color:var(--muted);font-weight:700;font-size:.92rem;margin:-4px 0 10px 4px}
+
+/* gems */
+.gem{
+  --s:28px;width:var(--s);height:var(--s);border-radius:50%;display:inline-grid;place-items:center;position:relative;flex:none;
+  background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.55),transparent 45%),var(--gc);
+  box-shadow:inset 0 0 0 2px var(--gb),inset 0 -3px 0 rgba(0,0,0,.18),0 1px 3px rgba(0,0,0,.22);
+}
+.gem::after{content:"";position:absolute;inset:27%;background:var(--gf);clip-path:polygon(50% 0,100% 38%,80% 100%,20% 100%,0 38%)}
+.g0{--gc:var(--g0);--gb:var(--g0b);--gf:#ffffff}
+.g1{--gc:var(--g1);--gb:var(--g1b);--gf:#8fb6f5}
+.g2{--gc:var(--g2);--gb:var(--g2b);--gf:#8fdcae}
+.g3{--gc:var(--g3);--gb:var(--g3b);--gf:#ffb0a6}
+.g4{--gc:var(--g4);--gb:var(--g4b);--gf:#7d7d92}
+.g5{--gc:var(--g5);--gb:var(--g5b);--gf:#fff}
+.g5::after{clip-path:none;border-radius:50%;inset:30%;background:radial-gradient(circle at 35% 35%,#fff,#e8c3d6)}
+.g6{--gc:var(--g6);--gb:var(--g6b);--gf:#fff1b8}
+.g6::after{clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+.gemN{font-weight:800;font-size:.8rem;position:absolute;right:-5px;bottom:-5px;background:var(--ink);color:#fff;border-radius:999px;min-width:17px;height:17px;display:grid;place-items:center;padding:0 3px;z-index:1;line-height:1}
+
+/* token board */
+.bwrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+.tboard{
+  display:grid;grid-template-columns:repeat(5,var(--cell));grid-auto-rows:var(--cell);gap:4px;padding:8px;border-radius:16px;
+  background:linear-gradient(135deg,#4a3770,#2d2047);box-shadow:inset 0 0 0 3px #6c5596,0 6px 14px rgba(36,24,61,.25)
+}
+.cellb{border-radius:50%;background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 2px rgba(255,255,255,.1);display:grid;place-items:center;position:relative}
+.cellb .gem{--s:calc(var(--cell) - 8px)}
+.cellb.can{cursor:pointer}
+.cellb.can:hover .gem{transform:scale(1.08)}
+.cellb.sel{background:rgba(236,189,60,.45);box-shadow:inset 0 0 0 3px #ffd75e}
+.cellb.hl{background:rgba(120,230,160,.35);box-shadow:inset 0 0 0 3px #7fe0a3;cursor:pointer}
+.cellb.fresh .gem{animation:pop .45s ease-out}
+@keyframes pop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+.binfo{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;font-weight:700;font-size:.92rem;color:var(--muted)}
+.scroll{display:inline-grid;place-items:center;width:26px;height:30px;border-radius:6px;background:#f6e7c4;border:2px solid #c9a660;font-size:.95rem;line-height:1}
+.scroll.off{opacity:.25}
+.bacts{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:calc(var(--cell)*5 + 36px)}
+
+/* cards */
+.market{display:flex;flex-direction:column;gap:8px}
+.mrow{display:flex;gap:6px;align-items:stretch}
+.mrow .lv{writing-mode:vertical-rl;transform:rotate(180deg);font-weight:800;color:var(--muted);font-size:.78rem;text-align:center}
+.royals{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.card{
+  width:var(--cw);height:calc(var(--cw)*1.36);border-radius:10px;position:relative;flex:none;overflow:hidden;
+  background:linear-gradient(180deg,var(--cc) 0 36%,#fffaf0 36%);border:2px solid var(--ccb);
+  box-shadow:0 2px 5px rgba(0,0,0,.14);font-size:calc(var(--cw)*.16);
+}
+.card.c0{--cc:#ece6d6;--ccb:#c4b99f}
+.card.c1{--cc:#5c8fe3;--ccb:#2f5fae}
+.card.c2{--cc:#4fae74;--ccb:#2a7a4a}
+.card.c3{--cc:#e3675b;--ccb:#a8382d}
+.card.c4{--cc:#55556a;--ccb:#24242e}
+.card.cj{--cc:linear-gradient(90deg,#ece6d6,#5c8fe3,#4fae74,#e3675b,#55556a);--ccb:#8a7aa8;background:linear-gradient(90deg,#d9d2c2,#5c8fe3,#4fae74,#e3675b,#55556a) top/100% 36% no-repeat,#fffaf0}
+.card.cx{--cc:#c9c2b4;--ccb:#9a9283}
+.card .pts{position:absolute;left:5%;top:2%;font-family:"Cinzel",serif;font-weight:900;font-size:1.7em;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.55);line-height:1.1}
+.card.c0 .pts{color:#4a4031;text-shadow:none}
+.card .crw{position:absolute;right:5%;top:24%;font-size:.85em;font-weight:800;color:#8a5d00;background:#fff3c4;border-radius:6px;padding:0 3px;line-height:1.3}
+.card .bon{position:absolute;right:5%;top:5%;display:flex;gap:1px}
+.card .bon .gem{--s:calc(var(--cw)*.24)}
+.card .ab{position:absolute;right:5%;top:43%;font-size:1.05em;line-height:1;background:#fff;border-radius:6px;padding:1px 3px;box-shadow:0 0 0 1px var(--ccb)}
+.card .cost{position:absolute;left:5%;bottom:4%;display:flex;flex-direction:column-reverse;gap:2px}
+.cdot{width:calc(var(--cw)*.21);height:calc(var(--cw)*.21);border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:.95em;line-height:1;color:#fff;background:var(--gc);box-shadow:inset 0 0 0 1.5px var(--gb)}
+.cdot.g0,.cdot.g5{color:#3a3030}
+.cdot.ok{outline:2px solid var(--green);outline-offset:1px}
+.card.pick{cursor:pointer;transition:transform .1s}
+.card.pick:hover{transform:translateY(-3px)}
+.card.sel{box-shadow:0 0 0 3px var(--gold),0 8px 14px rgba(0,0,0,.25);transform:translateY(-3px)}
+.card.buy::before{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 3px var(--green);border-radius:8px;z-index:2;pointer-events:none}
+.card.empty{background:transparent;border:2px dashed var(--line);box-shadow:none}
+.card.back{background:repeating-linear-gradient(45deg,#4a3770 0 8px,#3e2e60 8px 16px);border-color:#2d2047;color:#fff;display:grid;place-items:center;font-family:"Cinzel",serif;font-weight:900}
+.card.back .n{font-size:.9em;font-family:"Baloo 2",sans-serif;opacity:.85;position:absolute;bottom:4%;width:100%;text-align:center}
+.card.back .lvl{font-size:1.6em}
+.card.fresh{animation:pop .45s ease-out}
+.card.royal{background:linear-gradient(180deg,#f9e6a8,#f3d57a);border-color:#b8902c}
+.card.royal .pts{color:#6a4a00;text-shadow:none}
+.card.royal .ab{top:auto;bottom:6%;right:auto;left:50%;transform:translateX(-50%);font-size:1.3em}
+.card.royal .crownBig{position:absolute;inset:0;display:grid;place-items:center;font-size:1.8em;opacity:.45}
+.card.royal.hl{box-shadow:0 0 0 3px var(--green);cursor:pointer}
+.mini{--cw:58px}
+
+.actbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;min-height:38px}
+
+/* players */
+.players{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.panel.active{border-color:var(--green);box-shadow:0 0 0 3px rgba(47,138,91,.15)}
+.stats{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.stat{background:#f3eef8;border-radius:10px;padding:2px 8px;font-weight:800;font-size:.92rem;white-space:nowrap}
+.stat small{color:var(--muted);font-weight:700}
+.stat.hot{background:#fde6c4;color:#8a4b00}
+.tab{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center}
+.tcol{background:#faf6ee;border-radius:10px;padding:5px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+.tcol .gem{--s:30px}
+.tcol .bnum{font-weight:800;font-size:.8rem;color:var(--muted);line-height:1.1}
+.tcol .bnum b{color:var(--ink);font-size:.95rem}
+.tcol.hl{background:#e3f4ea;box-shadow:inset 0 0 0 2px var(--green);cursor:pointer}
+.tcol.zero .gem{opacity:.25}
+.resv{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:flex-end}
+.resv .lbl{font-size:.8rem;font-weight:800;color:var(--muted);width:100%}
+
+.log{max-height:220px;overflow:auto;font-size:.92rem;display:flex;flex-direction:column;gap:3px}
+.log div{padding:2px 0;border-bottom:1px dashed var(--line)}
+.log div.sys{color:var(--navy);font-weight:800}
+.bottom{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;margin-top:12px;align-items:start}
+
+/* overlay */
+.overlay{position:fixed;inset:0;background:rgba(42,34,51,.45);display:grid;place-items:center;padding:16px;z-index:50}
+.modal{background:var(--panel);border-radius:24px;padding:22px 20px;max-width:600px;width:100%;border:3px solid var(--line);box-shadow:0 20px 50px rgba(0,0,0,.25);max-height:92vh;overflow:auto}
+.modal h2{margin:0 0 6px;font-family:"Cinzel",serif;font-weight:900;font-size:1.6rem;color:var(--navy);text-align:center}
+.modal table{width:100%;border-collapse:collapse;margin:10px 0}
+.modal th,.modal td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:center}
+.modal th:first-child,.modal td:first-child{text-align:left}
+.modal .rules{font-size:.95rem;line-height:1.45}
+.modal .rules h3{margin:12px 0 4px;color:var(--navy)}
+.modal .rules ul{margin:4px 0;padding-left:20px}
+.modal .rules .gem{--s:18px;vertical-align:middle}
+.toast{
+  position:fixed;left:50%;bottom:20px;transform:translate(-50%,40px);opacity:0;background:var(--ink);color:#fff;
+  padding:10px 16px;border-radius:12px;font-weight:700;transition:.25s;z-index:60;max-width:calc(100vw - 32px);text-align:center;pointer-events:none;
+}
+.toast.show{transform:translate(-50%,0);opacity:1}
+
+@media (max-width:1100px){ :root{--cw:78px} }
+@media (max-width:960px){
+  .top{grid-template-columns:1fr}
+  .bottom{grid-template-columns:1fr}
+  :root{--cw:min(84px,calc((100vw - 32px - 28px - 20px - 36px)/6))}
+}
+@media (max-width:720px){ .players{grid-template-columns:1fr} }
+@media (max-width:600px){
+  #game{padding:8px 16px 20px}
+  .panel{padding:10px}
+  header .title{font-size:1.2rem}
+  :root{--cell:min(46px,calc((100vw - 32px - 20px - 16px - 16px)/5))}
+  .mrow{gap:4px}
+  .tcol .gem{--s:24px}
+  .mini{--cw:50px}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ LOBBY ============ -->
+<section id="lobby">
+  <div class="lobby-card">
+    <div id="lobbyMain">
+      <div class="logo"><span class="gem g0"></span><span class="gem g1"></span><span class="gem g2"></span><span class="gem g3"></span><span class="gem g4"></span><span class="gem g5"></span><span class="gem g6"></span></div>
+      <h1>Splendor Duel</h1>
+      <p class="tag">Thương nhân đá quý đấu tay đôi · 2 người</p>
+      <label for="nameInput">Tên của bạn</label>
+      <input id="nameInput" maxlength="16" placeholder="VD: Hoàng" autocomplete="off">
+      <div class="row"><button class="btn" id="createBtn">Tạo phòng</button></div>
+      <div class="or">hoặc vào phòng của bạn bè</div>
+      <label for="codeInput">Mã phòng</label>
+      <input id="codeInput" maxlength="5" placeholder="ABCDE" autocomplete="off">
+      <div class="row"><button class="btn green" id="joinBtn">Vào phòng</button></div>
+      <div class="or">hoặc</div>
+      <div class="row"><button class="btn gold" id="botBtn">Chơi với máy</button></div>
+      <div class="row"><button class="btn ghost" id="rulesBtn0">Xem luật chơi</button></div>
+      <div class="msg" id="lobbyMsg"></div>
+    </div>
+    <div id="lobbyWait" class="waiting hidden">
+      <div class="logo"><span class="gem g3"></span><span class="gem g6"></span><span class="gem g1"></span></div>
+      <h2 style="margin:6px 0 0">Phòng đã tạo!</h2>
+      <p class="tag">Gửi mã này cho bạn bè</p>
+      <div class="code" id="waitCode">-----</div>
+      <div class="link" id="waitLink"></div>
+      <div class="row"><button class="btn green" id="copyBtn">Sao chép link</button></div>
+      <p class="tag" style="margin-top:16px">Đang chờ người chơi thứ hai<span class="dots"></span></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GAME ============ -->
+<section id="game" class="hidden">
+  <header>
+    <span class="title">Splendor Duel</span>
+    <span class="info" id="roomInfo"></span>
+    <span class="turnChip" id="turnChip"></span>
+    <span class="sp"></span>
+    <button class="btn ghost" id="rulesBtn">Luật</button>
+  </header>
+  <div class="prompt" id="prompt"></div>
+  <div id="lastMove"></div>
+  <div class="top">
+    <div class="panel bwrap" id="boardPanel"></div>
+    <div class="panel">
+      <div class="ptitle">💎 Chợ đá quý <span class="sub">· bấm lá để mua / giữ chỗ</span></div>
+      <div class="market" id="market"></div>
+      <div class="actbar" id="actbar"></div>
+    </div>
+  </div>
+  <div class="players">
+    <div class="panel" id="myPanel"></div>
+    <div class="panel" id="oppPanel"></div>
+  </div>
+  <div class="bottom">
+    <div class="panel">
+      <div class="ptitle">📜 Nhật ký</div>
+      <div class="log" id="log"></div>
+    </div>
+    <div class="panel">
+      <div class="ptitle">🏁 Điều kiện thắng</div>
+      <div class="small" style="line-height:1.5">Cuối lượt của bạn, đạt <b>một</b> trong ba:<br>⭐ 20 điểm uy tín · 👑 10 vương miện · 🎨 10 điểm trên các lá cùng một màu.</div>
+    </div>
+  </div>
+</section>
+
+<div id="overlay" class="overlay hidden"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= RULES / ENGINE ================= */
+// Màu: 0 trắng, 1 lam, 2 lục, 3 đỏ, 4 đen, 5 ngọc trai, 6 vàng
+const PEARL=5, GOLD=6, NG=5;
+const GN=["trắng","lam","lục","đỏ","đen","ngọc trai","vàng"];
+const MAX_TOK=10, MAX_RES=3;
+// Thứ tự rải xoắn ốc từ ô giữa (hàng, cột 1–5)
+const SPIRAL=[[3,3],[4,3],[4,2],[3,2],[2,2],[2,3],[2,4],[3,4],[4,4],[5,4],[5,3],[5,2],[5,1],[4,1],[3,1],[2,1],[1,1],[1,2],[1,3],[1,4],[1,5],[2,5],[3,5],[4,5],[5,5]].map(([r,c])=>(r-1)*5+c-1);
+// Lá bài: cấp, màu (x = không màu, j = đa sắc), giá [trắng lam lục đỏ đen ngọc], số thưởng, điểm, vương miện, khả năng
+// Khả năng: t = thêm lượt, j = đa sắc, g = lấy 1 viên cùng màu, p = đặc quyền, s = cướp 1 viên
+const RAW=["10011110100","10030000101","10022001100t","10000220100g","10002300110","11101110100","11003000101","11002201100t","11200020100g","11000230110","12110110100","12000300101","12000221100t","12220000100g","12300020110","14111100100","14300000101","14220001100t","14002200100g","14023000110","13111010100","13000030101","13200021100t","13022000100g","13230000110","1j000041110j","1j400001101j","1x000401030","1j020211110j","1j202011110j","20002221121","20040300110s","20400021120p","20052000210","21200221121","21004030110s","21240001120p","21005200210","22220021121","22300400110s","22024001120p","22000520210","24022201121","24403000110s","24000241120p","24520000210","23222001121","23030040110s","23002401120p","23200050210","2j006001120j","2j006001102j","2j060001102j","2x060001050","30030531132","30620020140","31303051132","31262000140","32530301132","32026200140","34305301132","34200260140","33053031132","33002620140","3j000800130jt","3j000080103j","3x800000060"];
+const CARDS=RAW.map((s,id)=>({id, lvl:+s[0], c:s[1]==="x"?-1:s[1]==="j"?5:+s[1], cost:[...s.slice(2,8)].map(Number), b:+s[8], pts:+s[9], cr:+s[10], ab:s.slice(11)}));
+const ROYALS=[{id:0,pts:2,ab:"s"},{id:1,pts:2,ab:"t"},{id:2,pts:2,ab:"p"},{id:3,pts:3,ab:""}];
+const AB_ICON={t:"↻",g:"＋",p:"📜",s:"✋",j:"🌈"};
+const AB_TXT={t:"Thêm một lượt",g:"Lấy 1 viên cùng màu lá trên bàn",p:"Nhận 1 đặc quyền",s:"Cướp 1 viên (không phải vàng) của đối thủ",j:"Đa sắc: đặt vào một màu bạn đã có"};
+const DISPLAY_N=[5,4,3];
+const sum=a=>a.reduce((s,x)=>s+x,0);
+const range=n=>Array.from({length:n},(_,i)=>i);
+
+function rnd(n){ const a=new Uint32Array(1); crypto.getRandomValues(a); return a[0]%n; }
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=rnd(i+1); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+/* ---- hàm tính trên một người chơi ---- */
+function bonusOf(pl){ const b=[0,0,0,0,0]; for(const x of pl.cards) if(x.c>=0&&x.c<NG) b[x.c]+=CARDS[x.id].b; return b; }
+function colorPts(pl){ const b=[0,0,0,0,0]; for(const x of pl.cards) if(x.c>=0&&x.c<NG) b[x.c]+=CARDS[x.id].pts; return b; }
+function crownsOf(pl){ return sum(pl.cards.map(x=>CARDS[x.id].cr)); }
+function pointsOf(pl){ return sum(pl.cards.map(x=>CARDS[x.id].pts))+sum(pl.royals.map(r=>ROYALS[r].pts)); }
+const tokCount=pl=>sum(pl.tok);
+const hasColorCard=pl=>pl.cards.some(x=>x.c>=0&&x.c<NG);
+// Giá thực sau khi trừ thưởng
+function netCost(pl,card){ const b=bonusOf(pl); return card.cost.map((v,c)=>Math.max(0,v-(c<NG?b[c]:0))); }
+// Cách trả tự động: dùng đá cùng màu trước, thiếu bao nhiêu bù bằng vàng. null nếu không đủ.
+function payFor(pl,card){
+  const need=netCost(pl,card), pay=Array(7).fill(0); let short=0;
+  for(let c=0;c<6;c++){ pay[c]=Math.min(need[c],pl.tok[c]); short+=need[c]-pay[c]; }
+  if(short>pl.tok[GOLD]) return null;
+  pay[GOLD]=short; return pay;
+}
+function canBuy(pl,card){ return !!payFor(pl,card) && (card.c!==5||hasColorCard(pl)); }
+function winReason(pl){
+  if(pointsOf(pl)>=20) return "pts";
+  if(crownsOf(pl)>=10) return "crowns";
+  if(Math.max(...colorPts(pl))>=10) return "color";
+  return null;
+}
+
+/* ---- bàn đá ---- */
+const takeable=t=>t!==null&&t!==GOLD;
+function lineOk(cells){
+  if(!cells.length||cells.length>3||new Set(cells).size!==cells.length) return false;
+  const pts=cells.map(i=>[i/5|0,i%5]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  let dr=null,dc=null;
+  for(let i=1;i<pts.length;i++){
+    const r=pts[i][0]-pts[i-1][0], c=pts[i][1]-pts[i-1][1];
+    if(Math.abs(r)>1||Math.abs(c)>1||(r===0&&c===0)) return false;
+    if(dr===null){ dr=r; dc=c; } else if(r!==dr||c!==dc) return false;
+  }
+  return true;
+}
+function fillBoard(st){
+  shuffle(st.bag);
+  const placed=[];
+  for(const i of SPIRAL){ if(!st.bag.length) break; if(st.board[i]===null){ st.board[i]=st.bag.pop(); placed.push(i); } }
+  st.fresh=placed;
+}
+function givePriv(st,p){
+  const pl=st.pl[p], o=st.pl[1-p];
+  if(pl.priv>=3) return "";
+  if(st.privTable>0){ st.privTable--; pl.priv++; return `${st.names[p]} nhận 1 đặc quyền.`; }
+  o.priv--; pl.priv++; return `${st.names[p]} lấy 1 đặc quyền từ ${st.names[1-p]}.`;
+}
+function reservable(st){ return st.display.some(r=>r.some(x=>x!==null))||st.decks.some(d=>d.length); }
+function canTakeAny(st,p){
+  if(st.board.some(takeable)) return true;
+  return st.board.includes(GOLD)&&st.pl[p].res.length<MAX_RES&&reservable(st);
+}
+function buyables(st,p){
+  const pl=st.pl[p], out=[];
+  st.display.forEach((row,l)=>row.forEach((id,i)=>{ if(id!==null&&canBuy(pl,CARDS[id])) out.push({src:"d",lvl:l,idx:i,id}); }));
+  pl.res.forEach((r,i)=>{ if(canBuy(pl,CARDS[r.id])) out.push({src:"r",idx:i,id:r.id}); });
+  return out;
+}
+const canRefill=st=>st.bag.length>0&&st.board.includes(null);
+
+function newMatch(names,bot){ const st={names,bot:!!bot,log:[],moveNo:0}; resetMatch(st); return st; }
+function resetMatch(st){
+  st.bag=[]; for(let c=0;c<NG;c++) for(let k=0;k<4;k++) st.bag.push(c);
+  st.bag.push(PEARL,PEARL,GOLD,GOLD,GOLD);
+  st.board=Array(25).fill(null); fillBoard(st);
+  st.decks=[1,2,3].map(l=>shuffle(CARDS.filter(c=>c.lvl===l).map(c=>c.id)));
+  st.display=DISPLAY_N.map((n,l)=>range(n).map(()=>st.decks[l].pop()));
+  st.royals=[0,1,2,3];
+  st.first=rnd(2);
+  st.pl=[0,1].map(p=>({tok:Array(7).fill(0),cards:[],res:[],royals:[],priv:p===st.first?0:1}));
+  st.privTable=2;
+  st.turn=st.first; st.phase="play"; st.q=[]; st.again=false; st.result=null; st.last=null; st.freshCard=null;
+  st.log.push({t:`${st.names[st.first]} đi trước; ${st.names[1-st.first]} nhận 1 đặc quyền.`});
+}
+function refillDisplay(st,l,i){ st.display[l][i]=st.decks[l].length?st.decks[l].pop():null; st.freshCard=st.display[l][i]; }
+function say(st,p,t){ st.log.push({t}); st.last={p,text:t}; }
+
+// Xử lý chuỗi bước còn lại của lượt (đa sắc, lấy đá, cướp, lá hoàng gia), rồi bỏ đá thừa, rồi kết thúc lượt.
+function advance(st,p){
+  const pl=st.pl[p], o=st.pl[1-p];
+  while(st.q.length){
+    const s=st.q[0];
+    if(s.k==="gem"&&!st.board.includes(s.c)){ st.log.push({t:`Không còn đá ${GN[s.c]} trên bàn, bỏ qua khả năng.`}); st.q.shift(); continue; }
+    if(s.k==="steal"&&!o.tok.some((n,c)=>n>0&&c!==GOLD)){ st.log.push({t:`${st.names[1-p]} không có đá để cướp.`}); st.q.shift(); continue; }
+    if(s.k==="royal"&&!st.royals.length){ st.q.shift(); continue; }
+    st.phase=s.k; return;
+  }
+  if(tokCount(pl)>MAX_TOK){ st.phase="discard"; return; }
+  finishTurn(st,p);
+}
+function finishTurn(st,p){
+  const w=winReason(st.pl[p]);
+  if(w){ st.phase="end"; st.result={winner:p,reason:w}; st.log.push({sys:1,t:`🏆 ${st.names[p]} thắng (${REASON[w]})!`}); return; }
+  if(st.again){ st.again=false; st.log.push({t:`${st.names[p]} được đi thêm một lượt.`}); }
+  else st.turn=1-p;
+  st.phase="play";
+}
+const REASON={pts:"đạt 20 điểm uy tín",crowns:"đạt 10 vương miện",color:"đạt 10 điểm một màu"};
+
+function applyAction(st,p,a){
+  const err=doAction(st,p,a);
+  if(!err) st.moveNo++;
+  return err;
+}
+function doAction(st,p,a){
+  if(!a||typeof a!=="object") return "Hành động không hợp lệ.";
+  if(a.k==="rematch"){
+    if(st.phase!=="end") return "Trận chưa kết thúc.";
+    st.log.push({sys:1,t:"— Trận mới —"}); resetMatch(st); return null;
+  }
+  if(st.phase==="end") return "Trận đã kết thúc.";
+  if(st.turn!==p) return "Chưa tới lượt bạn.";
+  const pl=st.pl[p], o=1-p;
+  st.fresh=[]; st.freshCard=null;
+
+  if(st.phase==="play"){
+    if(a.k==="priv"){
+      if(pl.priv<1) return "Bạn không có đặc quyền.";
+      if(!Number.isInteger(a.cell)||!takeable(st.board[a.cell])) return "Chọn một viên đá (không phải vàng).";
+      const c=st.board[a.cell]; st.board[a.cell]=null; pl.tok[c]++; pl.priv--; st.privTable++;
+      say(st,p,`${st.names[p]} dùng đặc quyền lấy 1 ${GN[c]}.`); return null;
+    }
+    if(a.k==="refill"){
+      if(!canRefill(st)) return st.bag.length?"Bàn đang đầy.":"Túi đã hết đá.";
+      const t=givePriv(st,o); fillBoard(st);
+      say(st,p,`${st.names[p]} bổ sung bàn.`+(t?" "+t:"")); return null;
+    }
+    if(a.k==="take"){
+      const cells=a.cells;
+      if(!Array.isArray(cells)||!cells.every(i=>Number.isInteger(i)&&i>=0&&i<25&&takeable(st.board[i]))) return "Chỉ được lấy đá màu hoặc ngọc trai (không lấy vàng).";
+      if(!lineOk(cells)) return "Tối đa 3 viên liền nhau trên một đường thẳng (ngang, dọc, chéo).";
+      const got=cells.map(i=>st.board[i]);
+      cells.forEach(i=>st.board[i]=null); got.forEach(c=>pl.tok[c]++);
+      let t=`${st.names[p]} lấy ${got.map(c=>GN[c]).join(", ")}.`;
+      const cnt=range(7).map(c=>got.filter(x=>x===c).length);
+      if(cnt[PEARL]>=2||cnt.some(n=>n>=3)){ const g=givePriv(st,o); if(g) t+=` ${g}`; }
+      say(st,p,t); advance(st,p); return null;
+    }
+    if(a.k==="reserve"){
+      if(pl.res.length>=MAX_RES) return "Chỉ được giữ tối đa 3 lá.";
+      let cell=Number.isInteger(a.cell)&&st.board[a.cell]===GOLD?a.cell:st.board.indexOf(GOLD);
+      if(cell<0) return "Trên bàn không còn vàng.";
+      const l=a.lvl; if(![0,1,2].includes(l)) return "Lá không hợp lệ.";
+      let id, hid=false;
+      if(a.idx===-1){ if(!st.decks[l].length) return "Chồng bài đã hết."; id=st.decks[l].pop(); hid=true; }
+      else { id=st.display[l]?.[a.idx]; if(id==null) return "Lá không hợp lệ."; refillDisplay(st,l,a.idx); }
+      st.board[cell]=null; pl.tok[GOLD]++; pl.res.push({id,hid,lvl:l});
+      say(st,p,`${st.names[p]} lấy 1 vàng và giữ ${hid?`một lá úp cấp ${l+1}`:`lá cấp ${l+1}`}.`);
+      advance(st,p); return null;
+    }
+    if(a.k==="buy"){
+      let id;
+      if(a.src==="d"){ id=st.display[a.lvl]?.[a.idx]; }
+      else if(a.src==="r"){ id=pl.res[a.idx]?.id; }
+      if(id==null) return "Lá không hợp lệ.";
+      const card=CARDS[id];
+      if(card.c===5&&!hasColorCard(pl)) return "Lá đa sắc cần bạn có sẵn ít nhất một lá có màu.";
+      const pay=payFor(pl,card); if(!pay) return "Không đủ đá để mua lá này.";
+      const crBefore=crownsOf(pl);
+      for(let c=0;c<7;c++){ pl.tok[c]-=pay[c]; for(let k=0;k<pay[c];k++) st.bag.push(c); }
+      if(a.src==="d") refillDisplay(st,a.lvl,a.idx); else pl.res.splice(a.idx,1);
+      pl.cards.push({id,c:card.c===5?-1:card.c});
+      const paid=range(7).filter(c=>pay[c]).map(c=>`${pay[c]} ${GN[c]}`).join(", ");
+      say(st,p,`${st.names[p]} mua lá cấp ${card.lvl}${card.pts?` (${card.pts}⭐)`:""}${paid?`, trả ${paid}`:" miễn phí"}.`);
+      st.q=[];
+      if(card.ab.includes("j")) st.q.push({k:"joker",i:pl.cards.length-1});
+      for(const ab of card.ab){
+        if(ab==="t") st.again=true;
+        if(ab==="g") st.q.push({k:"gem",c:card.c});
+        if(ab==="p"){ const g=givePriv(st,p); if(g) st.log.push({t:g}); }
+        if(ab==="s") st.q.push({k:"steal"});
+      }
+      const crAfter=crownsOf(pl);
+      for(const th of [3,6]) if(crBefore<th&&crAfter>=th) st.q.push({k:"royal"});
+      advance(st,p); return null;
+    }
+    if(a.k==="pass"){
+      if(canTakeAny(st,p)||buyables(st,p).length||canRefill(st)) return "Bạn vẫn còn nước đi.";
+      say(st,p,`${st.names[p]} không thể làm gì, bỏ lượt.`); advance(st,p); return null;
+    }
+    return "Hành động không hợp lệ.";
+  }
+  const step=st.q[0];
+  if(st.phase==="joker"&&a.k==="joker"){
+    if(!Number.isInteger(a.c)||a.c<0||a.c>=NG||!pl.cards.some(x=>x.c===a.c)) return "Chọn một màu bạn đã có lá.";
+    pl.cards[step.i].c=a.c; st.q.shift();
+    st.log.push({t:`Lá đa sắc được xếp vào màu ${GN[a.c]}.`}); advance(st,p); return null;
+  }
+  if(st.phase==="gem"&&a.k==="gem"){
+    if(!Number.isInteger(a.cell)||st.board[a.cell]!==step.c) return `Chọn một viên ${GN[step.c]} trên bàn.`;
+    st.board[a.cell]=null; pl.tok[step.c]++; st.q.shift();
+    st.log.push({t:`${st.names[p]} lấy thêm 1 ${GN[step.c]} từ bàn.`}); advance(st,p); return null;
+  }
+  if(st.phase==="steal"&&a.k==="steal"){
+    const op=st.pl[o];
+    if(!Number.isInteger(a.c)||a.c<0||a.c>=GOLD||op.tok[a.c]<1) return "Chọn một viên đá (không phải vàng) của đối thủ.";
+    op.tok[a.c]--; pl.tok[a.c]++; st.q.shift();
+    st.log.push({t:`${st.names[p]} cướp 1 ${GN[a.c]} của ${st.names[o]}.`}); advance(st,p); return null;
+  }
+  if(st.phase==="royal"&&a.k==="royal"){
+    if(!st.royals.includes(a.id)) return "Lá hoàng gia không hợp lệ.";
+    st.royals=st.royals.filter(x=>x!==a.id); pl.royals.push(a.id); st.q.shift();
+    const R=ROYALS[a.id];
+    st.log.push({t:`👑 ${st.names[p]} nhận lá hoàng gia ${R.pts}⭐${R.ab?` (${AB_TXT[R.ab].toLowerCase()})`:""}.`});
+    if(R.ab==="t") st.again=true;
+    if(R.ab==="p"){ const g=givePriv(st,p); if(g) st.log.push({t:g}); }
+    if(R.ab==="s") st.q.unshift({k:"steal"});
+    advance(st,p); return null;
+  }
+  if(st.phase==="discard"&&a.k==="discard"){
+    if(!Number.isInteger(a.c)||a.c<0||a.c>6||pl.tok[a.c]<1) return "Chọn viên đá để trả về túi.";
+    pl.tok[a.c]--; st.bag.push(a.c);
+    if(tokCount(pl)<=MAX_TOK){ st.log.push({t:`${st.names[p]} trả bớt đá về túi (giữ tối đa 10).`}); finishTurn(st,p); }
+    return null;
+  }
+  return "Hành động không hợp lệ ở bước này.";
+}
+
+function viewFor(st,p){
+  return {
+    me:p, names:st.names, bot:st.bot, phase:st.phase, turn:st.turn, step:st.q[0]||null,
+    board:st.board, bag:st.bag.length, decks:st.decks.map(d=>d.length), display:st.display, royals:st.royals,
+    privTable:st.privTable, again:st.again, fresh:st.fresh||[], freshCard:st.freshCard,
+    pl:st.pl.map((x,i)=>({...x, res:x.res.map(r=>i===p||!r.hid?r:{id:null,hid:true,lvl:r.lvl})})),
+    log:st.log.slice(-60), last:st.last, moveNo:st.moveNo, result:st.result
+  };
+}
+
+/* ================= BOT ================= */
+function cardValue(st,p,card,jokerColor){
+  const pl=st.pl[p], cp=colorPts(pl), cr=crownsOf(pl), pts=pointsOf(pl);
+  let v=card.pts*1.1+card.cr*0.9;
+  if(cr<3&&cr+card.cr>=3||cr<6&&cr+card.cr>=6) v+=2.5;
+  const late=Math.min(1,pts/16);
+  v+=card.b*(1.1-0.6*late);
+  for(const ab of card.ab) v+={t:1.6,g:0.6,p:0.6,s:0.8,j:0}[ab];
+  let col=card.c===5?jokerColor:card.c;
+  if(col>=0&&col<NG&&card.pts) v+=Math.max(0,cp[col]+card.pts-5)*0.4;
+  if(pts+card.pts>=20||cr+card.cr>=10||(col>=0&&col<NG&&cp[col]+card.pts>=10)) v+=50;
+  return v;
+}
+function bestJoker(pl,card){
+  const cp=colorPts(pl), b=bonusOf(pl);
+  let best=-1,bv=-1;
+  for(let c=0;c<NG;c++){ if(!pl.cards.some(x=>x.c===c)) continue; const v=cp[c]*3+b[c]+(card?card.pts*0:0); if(v>bv){bv=v;best=c;} }
+  return best;
+}
+function deficit(pl,card,tok){
+  const need=netCost(pl,card); let d=0;
+  for(let c=0;c<6;c++) d+=Math.max(0,need[c]-tok[c]);
+  return Math.max(0,d-tok[GOLD]);
+}
+function targets(st,p){
+  const pl=st.pl[p], out=[];
+  st.display.forEach((row,l)=>row.forEach((id,i)=>{ if(id!==null) out.push({id,res:false}); }));
+  pl.res.forEach(r=>out.push({id:r.id,res:true}));
+  return out.map(t=>{ const card=CARDS[t.id]; const v=cardValue(st,p,card,bestJoker(pl,card)); const d=deficit(pl,card,pl.tok); return {...t,card,v,d,w:(v+(t.res?0.6:0))/Math.pow(d+1,1.4)}; })
+    .filter(t=>t.card.c!==5||hasColorCard(pl)).sort((a,b)=>b.w-a.w).slice(0,6);
+}
+function allLines(board){
+  const res=[];
+  for(let i=0;i<25;i++){
+    if(!takeable(board[i])) continue;
+    res.push([i]);
+    const r=i/5|0, c=i%5;
+    for(const [dr,dc] of [[0,1],[1,0],[1,1],[1,-1]]){
+      let line=[i];
+      for(let k=1;k<3;k++){
+        const rr=r+dr*k, cc=c+dc*k; if(rr<0||rr>4||cc<0||cc>4) break;
+        const j=rr*5+cc; if(!takeable(board[j])) break;
+        line=line.concat(j); res.push(line);
+      }
+    }
+  }
+  return res;
+}
+function gainOf(st,p,tg,addTok){
+  const pl=st.pl[p], tok=pl.tok.map((n,c)=>n+addTok[c]);
+  let g=0; for(const t of tg) g+=t.w*(t.d-deficit(pl,t.card,tok));
+  return g;
+}
+function oppThreat(st,p){
+  // lá trên bàn mà đối thủ mua được và thắng ngay
+  const o=1-p, op=st.pl[o];
+  for(let l=0;l<3;l++) for(let i=0;i<st.display[l].length;i++){
+    const id=st.display[l][i]; if(id===null) continue;
+    const card=CARDS[id]; if(!canBuy(op,card)) continue;
+    if(cardValue(st,o,card,bestJoker(op,card))>=40) return {lvl:l,idx:i};
+  }
+  return null;
+}
+function botDecide(st,p){
+  const pl=st.pl[p], o=st.pl[1-p];
+  if(st.phase==="joker") return {k:"joker",c:bestJoker(pl,null)};
+  if(st.phase==="gem"){ return {k:"gem",cell:st.board.indexOf(st.q[0].c)}; }
+  if(st.phase==="steal"){
+    const tg=targets(st,p); let best=-1,bv=-1;
+    for(let c=0;c<GOLD;c++){ if(!o.tok[c]) continue; const add=Array(7).fill(0); add[c]=1; const v=gainOf(st,p,tg,add)+(c===PEARL?0.5:0)+Math.random()*0.01; if(v>bv){bv=v;best=c;} }
+    return {k:"steal",c:best};
+  }
+  if(st.phase==="royal"){
+    const val={s:2.7,t:3.1,p:2.4,"":3};
+    let best=st.royals[0]; for(const r of st.royals) if(val[ROYALS[r].ab]>val[ROYALS[best].ab]) best=r;
+    if(pointsOf(pl)+3>=20&&st.royals.includes(3)) best=3;
+    return {k:"royal",id:best};
+  }
+  if(st.phase==="discard"){
+    const tg=targets(st,p); let best=-1,bv=Infinity;
+    for(let c=0;c<7;c++){ if(!pl.tok[c]) continue; const add=Array(7).fill(0); add[c]=-1; const loss=-gainOf(st,p,tg,add)+(c===GOLD?1.5:c===PEARL?0.8:0); if(loss<bv){bv=loss;best=c;} }
+    return {k:"discard",c:best};
+  }
+  // phase play
+  const bs=buyables(st,p);
+  let best=null;
+  const consider=(score,a)=>{ score+=Math.random()*0.05; if(!best||score>best.s) best={s:score,a}; };
+  for(const b of bs){
+    const card=CARDS[b.id];
+    consider(cardValue(st,p,card,bestJoker(pl,card))+0.4,{k:"buy",src:b.src,lvl:b.lvl,idx:b.idx});
+  }
+  if(best&&best.s>=40) return best.a;                      // thắng ngay
+  // chặn lá thắng của đối thủ
+  const th=oppThreat(st,p);
+  if(th&&pl.res.length<MAX_RES&&st.board.includes(GOLD)) return {k:"reserve",lvl:th.lvl,idx:th.idx};
+  // dùng đặc quyền nếu giúp mua được một lá ngay
+  if(pl.priv>0){
+    const tg=targets(st,p);
+    for(const t of tg){
+      if(t.d<1||t.d>pl.priv||t.v<1.5) continue;
+      const need=netCost(pl,t.card);
+      const c=range(6).find(c=>need[c]>pl.tok[c]&&st.board.includes(c));
+      if(c!==undefined) return {k:"priv",cell:st.board.indexOf(c)};
+    }
+    if(pl.priv>=3&&st.board.some(takeable)&&tokCount(pl)<9){
+      let bc=null,bv=-1;
+      st.board.forEach((t,i)=>{ if(!takeable(t)) return; const add=Array(7).fill(0); add[t]=1; const v=gainOf(st,p,tg,add); if(v>bv){bv=v;bc=i;} });
+      if(bc!==null) return {k:"priv",cell:bc};
+    }
+  }
+  const tg=targets(st,p);
+  const n=tokCount(pl);
+  for(const line of allLines(st.board)){
+    const add=Array(7).fill(0); line.forEach(i=>add[st.board[i]]++);
+    let s=gainOf(st,p,tg,add)*0.9+line.length*0.12+add[PEARL]*0.3;
+    if(add[PEARL]>=2||add.some(x=>x>=3)) s-=1.1;
+    const over=n+line.length-MAX_TOK; if(over>0) s-=over*0.7;
+    consider(s,{k:"take",cells:line});
+  }
+  if(pl.res.length<MAX_RES&&st.board.includes(GOLD)){
+    for(const t of targets(st,p)){
+      if(t.res) continue;
+      const l=t.card.lvl-1, idx=st.display[l].indexOf(t.id);
+      const s=0.45*t.v/Math.pow(Math.max(0,t.d-1)+1,0.8)+0.5-pl.res.length*0.4-(n>=MAX_TOK?0.7:0);
+      consider(s,{k:"reserve",lvl:l,idx});
+    }
+  }
+  const board=st.board.filter(takeable).length;
+  if(canRefill(st)&&(!best||(board<3&&st.bag.length>=4&&best.a.k==="take"&&best.s<1.2))) return {k:"refill"};
+  return best?best.a:{k:"pass"};
+}
+let botTimer=null, botKey="";
+function maybeBot(){
+  if(!state||!state.bot) return;
+  const st=state, key=`${st.moveNo}|${st.phase}`;
+  if(key===botKey) return;
+  botKey=key; clearTimeout(botTimer);
+  if(st.phase!=="end"&&st.turn===1){
+    botTimer=setTimeout(()=>{
+      if(state.phase==="end"||state.turn!==1) return;
+      const a=botDecide(state,1); let err=applyAction(state,1,a);
+      if(err){ console.warn("bot:",err,a); err=applyAction(state,1,fallbackAction(state,1)); if(err) console.warn("bot fallback:",err); }
+      broadcast();
+    }, (state.phase==="play"?900:650)+Math.random()*600);
+  }
+}
+function fallbackAction(st,p){
+  const pl=st.pl[p];
+  if(st.phase==="discard") return {k:"discard",c:pl.tok.findIndex(n=>n>0)};
+  if(st.phase==="play"){
+    const lines=allLines(st.board); if(lines.length) return {k:"take",cells:lines[0]};
+    if(canRefill(st)) return {k:"refill"};
+    return {k:"pass"};
+  }
+  return {k:"pass"};
+}
+
+/* ================= NETWORK ================= */
+const PREFIX="splendorduel-vh-";
+let peer=null, conn=null, guestConn=null, isHost=false, myName="", guestName="", roomCode="", state=null, view=null, joinTimer=null;
+
+const $ = id => document.getElementById(id);
+function toast(t){ const el=$("toast"); el.textContent=t; el.classList.add("show"); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove("show"),2600); }
+function lobbyMsg(t){ $("lobbyMsg").textContent=t||""; }
+function genCode(){ const A="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s=""; const r=new Uint32Array(5); crypto.getRandomValues(r); for(const x of r) s+=A[x%A.length]; return s; }
+function roomLink(){ return location.origin+location.pathname+"?room="+roomCode; }
+function getName(){
+  const n=$("nameInput").value.trim();
+  if(!n){ lobbyMsg("Nhập tên trước đã nhé 💎"); $("nameInput").focus(); return null; }
+  try{ localStorage.setItem("splendorduel-name",n); }catch(e){}
+  return n;
+}
+function lockLobby(b){ $("createBtn").disabled=b; $("joinBtn").disabled=b; $("botBtn").disabled=b; }
+
+function playBot(){
+  const n=getName(); if(!n) return;
+  myName=n; isHost=true; roomCode="";
+  state=newMatch([myName,"Thương nhân máy"], true);
+  startGameUI(); broadcast();
+}
+function createRoom(){
+  const n=getName(); if(!n) return;
+  if(typeof Peer==="undefined"){ lobbyMsg("Không tải được thư viện kết nối, kiểm tra mạng."); return; }
+  myName=n; isHost=true; lockLobby(true); lobbyMsg("");
+  roomCode=genCode();
+  peer=new Peer(PREFIX+roomCode);
+  peer.on("open",()=>{
+    $("lobbyMain").classList.add("hidden"); $("lobbyWait").classList.remove("hidden");
+    $("waitCode").textContent=roomCode; $("waitLink").textContent=roomLink();
+    history.replaceState(null,"","?room="+roomCode+"&host=1");
+  });
+  peer.on("connection", onGuestConn);
+  peer.on("disconnected",()=>{ if(!peer.destroyed) peer.reconnect(); });
+  peer.on("error",e=>{
+    if(e.type==="unavailable-id"){ peer.destroy(); isHost=false; createRoom(); return; }
+    if(e.type==="peer-unavailable") return;
+    console.warn(e); toast("Lỗi kết nối: "+e.type); lockLobby(false);
+  });
+}
+function onGuestConn(c){
+  c.on("data", msg=>{
+    if(!msg||typeof msg!=="object") return;
+    if(msg.t==="hello"){
+      if(guestConn && guestConn!==c && guestConn.open){ c.send({t:"full"}); setTimeout(()=>c.close(),300); return; }
+      guestConn=c; guestName=String(msg.name||"Khách").slice(0,16);
+      if(!state){ state=newMatch([myName,guestName]); startGameUI(); }
+      else { state.names[1]=guestName; state.log.push({t:`${guestName} đã vào lại phòng.`}); }
+      broadcast();
+    } else if(msg.t==="act" && c===guestConn){
+      const err=applyAction(state,1,msg.a||{});
+      if(err) c.send({t:"err",msg:err});
+      broadcast();
+    }
+  });
+  c.on("close",()=>{ if(c===guestConn){ guestConn=null; if(state){ state.log.push({t:`${guestName} mất kết nối…`}); broadcast(); } } });
+}
+function broadcast(){
+  onView(viewFor(state,0));
+  if(guestConn && guestConn.open) guestConn.send({t:"state", view:viewFor(state,1)});
+  maybeBot();
+}
+function joinRoom(){
+  const n=getName(); if(!n) return;
+  const code=$("codeInput").value.trim().toUpperCase();
+  if(code.length!==5){ lobbyMsg("Mã phòng gồm 5 ký tự."); return; }
+  if(typeof Peer==="undefined"){ lobbyMsg("Không tải được thư viện kết nối, kiểm tra mạng."); return; }
+  myName=n; roomCode=code; isHost=false; lockLobby(true); lobbyMsg("Đang kết nối…");
+  $("lobbyMsg").style.color="var(--muted)";
+  if(peer) peer.destroy();
+  peer=new Peer();
+  peer.on("open",()=>connectToHost());
+  peer.on("error",e=>{
+    $("lobbyMsg").style.color="";
+    if(e.type==="peer-unavailable"){ clearTimeout(joinTimer); if(!view){ lobbyMsg("Không tìm thấy phòng "+roomCode+". Kiểm tra lại mã."); lockLobby(false); } else showDisconnected(); }
+    else { console.warn(e); lobbyMsg("Lỗi kết nối: "+e.type); lockLobby(false); }
+  });
+  peer.on("disconnected",()=>{ if(!peer.destroyed) peer.reconnect(); });
+}
+function connectToHost(){
+  conn=peer.connect(PREFIX+roomCode,{reliable:true});
+  clearTimeout(joinTimer);
+  joinTimer=setTimeout(()=>{ if(!view){ lobbyMsg("Kết nối quá lâu. Chủ phòng còn mở tab không?"); lockLobby(false); } },15000);
+  conn.on("open",()=>{ conn.send({t:"hello",name:myName}); });
+  conn.on("data",msg=>{
+    if(!msg) return;
+    if(msg.t==="state"){ clearTimeout(joinTimer); if($("game").classList.contains("hidden")) startGameUI(); if(overlayId==="dc") closeOverlay(); onView(msg.view); }
+    else if(msg.t==="err") toast(msg.msg);
+    else if(msg.t==="full"){ lobbyMsg("Phòng đã đủ 2 người."); lockLobby(false); }
+  });
+  conn.on("close",()=>{ if(view) showDisconnected(); });
+}
+function showDisconnected(){
+  openOverlay(`<h2>Mất kết nối</h2><p class="tag" style="text-align:center">Không liên lạc được với chủ phòng.</p>
+    <div class="row"><button class="btn green" id="rejoinBtn">Kết nối lại</button></div>`, "dc");
+  $("rejoinBtn").onclick=()=>{ $("rejoinBtn").disabled=true; $("rejoinBtn").textContent="Đang thử…"; connectToHost(); };
+}
+function sendAction(a){
+  if(isHost){ const err=applyAction(state,0,a); if(err) toast(err); broadcast(); }
+  else if(conn && conn.open) conn.send({t:"act",a});
+  else toast("Chưa kết nối với chủ phòng.");
+}
+
+/* ================= UI ================= */
+let overlayId=null;
+function openOverlay(html,id){ $("modal").innerHTML=html; $("overlay").classList.remove("hidden"); overlayId=id; }
+function closeOverlay(){ $("overlay").classList.add("hidden"); overlayId=null; }
+$("overlay").addEventListener("click",e=>{ if(e.target.id==="overlay" && overlayId==="rules") closeOverlay(); });
+
+function startGameUI(){
+  $("lobby").classList.add("hidden"); $("game").classList.remove("hidden");
+  $("roomInfo").innerHTML = roomCode ? `Phòng <b>${roomCode}</b>` : "Chơi với máy";
+  if(!isHost && roomCode) history.replaceState(null,"","?room="+roomCode);
+}
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const gemHTML=(c,extra="")=>`<span class="gem g${c}" title="${GN[c]}" ${extra}></span>`;
+
+// Trạng thái chọn cục bộ
+let selCells=[], selCard=null, privMode=false, selKey="";
+
+const myTurn=()=>view&&view.phase!=="end"&&view.turn===view.me;
+const myPl=()=>view.pl[view.me];
+
+function onView(v){
+  view=v;
+  if(`${v.moveNo}`!==selKey){ selKey=`${v.moveNo}`; selCells=[]; selCard=null; privMode=false; }
+  render();
+  if(v.phase==="end") showEnd(); else if(overlayId==="end") closeOverlay();
+  document.title = myTurn() ? "● Lượt bạn · Splendor Duel" : "Splendor Duel";
+}
+
+function render(){
+  const v=view, o=1-v.me;
+  const tc=$("turnChip");
+  tc.textContent = v.phase==="end" ? "Kết thúc" : myTurn() ? "Lượt của bạn" : `Lượt của ${v.names[v.turn]}`;
+  tc.classList.toggle("me",myTurn());
+  $("lastMove").innerHTML = v.last&&v.last.p!==v.me ? `<div class="lastMove">↪ ${esc(v.last.text)}</div>` : "";
+  renderPrompt(); renderBoard(); renderMarket(); renderPlayer(v.me); renderPlayer(o);
+  $("log").innerHTML = v.log.slice().reverse().map(l=>`<div class="${l.sys?"sys":""}">${esc(l.t)}</div>`).join("");
+}
+
+function selTokens(){ return selCells.map(i=>view.board[i]); }
+function renderPrompt(){
+  const v=view, el=$("prompt"), my=myTurn(), pl=myPl();
+  el.classList.toggle("me",my);
+  let h="";
+  if(v.phase==="end") h="Trận đã kết thúc.";
+  else if(!my){
+    const ph={play:"đang chọn nước đi",joker:"đang xếp lá đa sắc",gem:"đang lấy đá từ khả năng của lá",steal:"đang cướp đá",royal:"đang chọn lá hoàng gia",discard:"đang trả bớt đá"}[v.phase];
+    h=`${esc(v.names[v.turn])} ${ph}<span class="dots"></span>`;
+  } else if(v.phase==="joker"){
+    h=`🌈 Xếp lá đa sắc vào màu nào? <span class="acts">${range(NG).filter(c=>pl.cards.some(x=>x.c===c)).map(c=>`<button class="btn ghost sm" data-joker="${c}">${gemHTML(c)} ${GN[c]}</button>`).join("")}</span>`;
+  } else if(v.phase==="gem"){
+    h=`＋ Chọn 1 viên ${gemHTML(v.step.c)} ${GN[v.step.c]} trên bàn (ô sáng xanh).`;
+  } else if(v.phase==="steal"){
+    const op=v.pl[1-v.me];
+    h=`✋ Cướp 1 viên của ${esc(v.names[1-v.me])}: <span class="acts">${range(6).filter(c=>op.tok[c]>0).map(c=>`<button class="btn ghost sm" data-steal="${c}">${gemHTML(c)} ${GN[c]}</button>`).join("")}</span>`;
+  } else if(v.phase==="royal"){
+    h="👑 Bạn đạt mốc vương miện! Chọn một lá hoàng gia (viền xanh) trong chợ.";
+  } else if(v.phase==="discard"){
+    h=`Bạn đang giữ ${tokCount(pl)} viên — bấm vào đá trong khu của bạn để trả về túi cho tới khi còn 10.`;
+  } else {
+    const mustRefill=!v.board.some(takeable)&&!(v.board.includes(GOLD)&&pl.res.length<MAX_RES)&&!buyablesV().length;
+    if(privMode) h="📜 Chọn 1 viên đá bất kỳ (không phải vàng) để lấy bằng đặc quyền.";
+    else if(mustRefill&&canRefillV()) h="Bạn không còn nước bắt buộc nào — phải <b>bổ sung bàn</b>.";
+    else if(mustRefill) h=`Không còn nước đi nào. <span class="acts"><button class="btn sm" data-pass="1">Bỏ lượt</button></span>`;
+    else if(selCells.length){
+      const t=selTokens();
+      if(t.length===1&&t[0]===GOLD) h="Đã chọn 1 vàng — bấm một lá trong chợ hoặc chồng bài úp để giữ chỗ.";
+      else {
+        const ok=lineOk(selCells), cnt=range(7).map(c=>t.filter(x=>x===c).length), gp=cnt[PEARL]>=2||cnt.some(n=>n>=3);
+        h=`Đã chọn ${t.length} viên ${t.map(c=>gemHTML(c)).join("")} <span class="acts"><button class="btn green sm" data-take="1" ${ok?"":"disabled"}>Lấy</button><button class="btn ghost sm" data-clear="1">Bỏ chọn</button></span>${gp?`<span class="small">(đối thủ sẽ nhận 1 đặc quyền)</span>`:""}`;
+      }
+    } else h="Lượt của bạn: lấy tới 3 viên liền nhau trên một đường thẳng, <b>hoặc</b> lấy 1 vàng + giữ một lá, <b>hoặc</b> mua một lá.";
+  }
+  el.innerHTML=h;
+}
+function buyablesV(){ const pl=myPl(), out=[]; view.display.forEach((r,l)=>r.forEach((id,i)=>{ if(id!==null&&canBuy(pl,CARDS[id])) out.push(id); })); pl.res.forEach(r=>{ if(r.id!==null&&canBuy(pl,CARDS[r.id])) out.push(r.id); }); return out; }
+const canRefillV=()=>view.bag>0&&view.board.includes(null);
+
+function renderBoard(){
+  const v=view, my=myTurn(), pl=myPl();
+  const fresh=new Set(v.fresh);
+  let cells="";
+  v.board.forEach((t,i)=>{
+    let cls="cellb";
+    if(t!==null){
+      if(my&&v.phase==="play"&&(privMode?takeable(t):(t!==GOLD||pl.res.length<MAX_RES))) cls+=" can";
+      if(my&&v.phase==="gem"&&t===v.step.c) cls+=" hl";
+      if(selCells.includes(i)) cls+=" sel";
+      if(fresh.has(i)) cls+=" fresh";
+    }
+    cells+=`<div class="${cls}" data-cell="${i}">${t!==null?gemHTML(t):""}</div>`;
+  });
+  const scrolls=range(v.privTable).map(()=>`<span class="scroll" title="Đặc quyền trên bàn">📜</span>`).join("")||`<span class="small">không còn</span>`;
+  let acts="";
+  if(my&&v.phase==="play"){
+    acts=`<button class="btn sm ${privMode?"on":""}" id="privBtn" ${pl.priv&&v.board.some(takeable)?"":"disabled"}>📜 Dùng đặc quyền (${pl.priv})</button>
+      <button class="btn gold sm" id="refillBtn" ${canRefillV()?"":"disabled"} title="Đối thủ nhận 1 đặc quyền">♻ Bổ sung bàn</button>`;
+  }
+  $("boardPanel").innerHTML=`<div class="ptitle" style="margin:0">🔷 Bàn đá quý</div>
+    <div class="tboard" id="tboard">${cells}</div>
+    <div class="binfo"><span>Túi: <b>${v.bag}</b> viên</span><span>Đặc quyền trên bàn: ${scrolls}</span></div>
+    <div class="bacts">${acts}</div>`;
+}
+
+function cardHTML(id,cls="",extra="",pl=null){
+  if(id===null) return `<div class="card empty ${cls}"></div>`;
+  const c=CARDS[id], kc=c.c===5?"cj":c.c<0?"cx":"c"+c.c;
+  const need=pl?netCost(pl,c):null;
+  const cost=c.cost.map((n,g)=>n?`<span class="cdot g${g} ${need&&need[g]<=pl.tok[g]?"ok":""}" style="--gc:var(--g${g});--gb:var(--g${g}b)" title="${n} ${GN[g]}">${n}</span>`:"").join("");
+  const bon=c.c>=0&&c.c<NG?range(c.b).map(()=>gemHTML(c.c)).join(""):c.c===5?`<span class="gem" style="background:conic-gradient(var(--g0),var(--g1),var(--g2),var(--g3),var(--g4),var(--g0));--gb:#8a7aa8;--gf:#fff" title="đa sắc"></span>`:"";
+  const ab=c.ab.replace("j","");
+  const tip=[c.pts?`${c.pts} điểm`:"", c.cr?`${c.cr} vương miện`:"", ...[...c.ab].map(x=>AB_TXT[x])].filter(Boolean).join(" · ");
+  return `<div class="card ${kc} ${cls}" title="${tip}" ${extra}>
+    ${c.pts?`<span class="pts">${c.pts}</span>`:""}${c.cr?`<span class="crw">👑${c.cr>1?c.cr:""}</span>`:""}
+    <span class="bon">${bon}</span>${ab?`<span class="ab">${[...ab].map(x=>AB_ICON[x]).join("")}</span>`:""}
+    <span class="cost">${cost}</span></div>`;
+}
+function royalHTML(r,cls="",extra=""){
+  const R=ROYALS[r];
+  return `<div class="card royal ${cls}" title="Lá hoàng gia: ${R.pts} điểm${R.ab?" · "+AB_TXT[R.ab]:""}" ${extra}><span class="crownBig">👑</span><span class="pts">${R.pts}</span>${R.ab?`<span class="ab">${AB_ICON[R.ab]}</span>`:""}</div>`;
+}
+
+function renderMarket(){
+  const v=view, my=myTurn(), pl=myPl(), play=my&&v.phase==="play";
+  let h=`<div class="royals mini">${v.royals.map(r=>royalHTML(r, my&&v.phase==="royal"?"hl":"", `data-royal="${r}"`)).join("")||`<span class="small">Hết lá hoàng gia</span>`}
+    <span class="small" style="flex-basis:160px;flex-grow:1">👑 Đạt 3 và 6 vương miện → nhận 1 lá hoàng gia.</span></div>`;
+  for(const l of [2,1,0]){
+    const deck=`<div class="card back ${play&&v.decks[l]?"pick":""} ${selCard&&selCard.src==="deck"&&selCard.lvl===l?"sel":""}" data-deck="${l}" title="Chồng bài cấp ${l+1}"><span class="lvl">${"I".repeat(l+1)}</span><span class="n">${v.decks[l]} lá</span></div>`;
+    const cards=v.display[l].map((id,i)=>{
+      let cls=play&&id!==null?"pick":"";
+      if(id!==null&&play&&canBuy(pl,CARDS[id])) cls+=" buy";
+      if(selCard&&selCard.src==="d"&&selCard.lvl===l&&selCard.idx===i) cls+=" sel";
+      if(id!==null&&id===v.freshCard) cls+=" fresh";
+      return cardHTML(id,cls,`data-dl="${l}" data-di="${i}"`,pl);
+    }).join("");
+    h+=`<div class="mrow"><span class="lv">CẤP ${l+1}</span>${deck}${cards}</div>`;
+  }
+  $("market").innerHTML=h;
+  renderActbar();
+}
+function selectedCardId(){
+  if(!selCard) return null;
+  if(selCard.src==="d") return view.display[selCard.lvl][selCard.idx];
+  if(selCard.src==="r") return myPl().res[selCard.idx]?.id??null;
+  return null;
+}
+function renderActbar(){
+  const v=view, pl=myPl(); let h="";
+  if(myTurn()&&v.phase==="play"&&selCard){
+    const id=selectedCardId();
+    if(id!==null){
+      const card=CARDS[id], pay=payFor(pl,card), jokerBad=card.c===5&&!hasColorCard(pl);
+      const payTxt=pay?range(7).filter(c=>pay[c]).map(c=>`${pay[c]}${gemHTML(c,'style="--s:18px;vertical-align:middle"')}`).join(" ")||"miễn phí":"";
+      h+=`<button class="btn green sm" data-buy="1" ${pay&&!jokerBad?"":"disabled"}>Mua ${pay&&!jokerBad?`— trả ${payTxt}`:jokerBad?"(cần có lá màu trước)":"(chưa đủ đá)"}</button>`;
+    }
+    if(selCard.src!=="r"){
+      const canRes=pl.res.length<MAX_RES&&v.board.includes(GOLD);
+      h+=`<button class="btn gold sm" data-reserve="1" ${canRes?"":"disabled"}>Giữ chỗ + lấy 1 vàng ${canRes?"":pl.res.length>=MAX_RES?"(đã giữ 3 lá)":"(hết vàng)"}</button>`;
+    }
+    h+=`<button class="btn ghost sm" data-clear="1">Huỷ</button>`;
+  }
+  $("actbar").innerHTML=h;
+}
+
+function renderPlayer(p){
+  const v=view, pl=v.pl[p], mine=p===v.me, panel=$(mine?"myPanel":"oppPanel");
+  panel.classList.toggle("active", v.phase!=="end"&&v.turn===p);
+  const b=bonusOf(pl), cp=colorPts(pl), pts=pointsOf(pl), cr=crownsOf(pl), mx=Math.max(...cp);
+  const disc=mine&&myTurn()&&v.phase==="discard";
+  let cols="";
+  for(let c=0;c<7;c++){
+    const tok=pl.tok[c];
+    cols+=`<div class="tcol ${disc&&tok?"hl":""} ${tok?"":"zero"}" ${disc&&tok?`data-disc="${c}"`:""} title="${GN[c]}">
+      <span class="gem g${c}" style="position:relative">${tok?`<span class="gemN">${tok}</span>`:""}</span>
+      ${c<NG?`<span class="bnum">thưởng <b>${b[c]}</b></span><span class="bnum">⭐ <b>${cp[c]}</b></span>`:`<span class="bnum">${c===PEARL?"ngọc":"vàng"}</span>`}
+    </div>`;
+  }
+  const res=pl.res.map((r,i)=>{
+    if(r.id===null) return `<div class="card back" style="--cw:var(--mcw,58px)"><span class="lvl">${"I".repeat(r.lvl+1)}</span><span class="n">úp</span></div>`;
+    let cls="";
+    if(mine&&myTurn()&&v.phase==="play"){ cls="pick"; if(canBuy(pl,CARDS[r.id])) cls+=" buy"; }
+    if(mine&&selCard&&selCard.src==="r"&&selCard.idx===i) cls+=" sel";
+    return cardHTML(r.id,cls,mine?`data-ri="${i}"`:"",mine?pl:null);
+  }).join("");
+  const roy=pl.royals.map(r=>royalHTML(r)).join("");
+  panel.innerHTML=`<div class="ptitle">${mine?"🧑 "+esc(v.names[p])+" (bạn)":"👤 "+esc(v.names[p])}<span class="sp"></span>
+      <span class="small">${pl.cards.length} lá · ${tokCount(pl)}/10 viên</span></div>
+    <div class="stats">
+      <span class="stat ${pts>=15?"hot":""}" title="Điểm uy tín">⭐ ${pts}<small>/20</small></span>
+      <span class="stat ${cr>=7?"hot":""}" title="Vương miện">👑 ${cr}<small>/10</small></span>
+      <span class="stat ${mx>=7?"hot":""}" title="Điểm cao nhất của một màu">🎨 ${mx}<small>/10</small></span>
+      <span class="stat" title="Đặc quyền">📜 ${pl.priv}</span>
+    </div>
+    <div class="tab">${cols}</div>
+    ${res||roy?`<div class="resv mini">${res?`<span class="lbl">Lá đang giữ (${pl.res.length}/3)</span>${res}`:""}${roy?`<span class="lbl">Lá hoàng gia</span>${roy}`:""}</div>`:""}`;
+}
+
+/* ---- events ---- */
+document.addEventListener("click",e=>{
+  if(!view) return;
+  const t=e.target;
+  const q=s=>t.closest(s);
+  let el;
+  if((el=q("[data-joker]"))) return sendAction({k:"joker",c:+el.dataset.joker});
+  if((el=q("[data-steal]"))) return sendAction({k:"steal",c:+el.dataset.steal});
+  if((el=q("[data-disc]"))) return sendAction({k:"discard",c:+el.dataset.disc});
+  if((el=q("[data-royal]"))){ if(myTurn()&&view.phase==="royal") sendAction({k:"royal",id:+el.dataset.royal}); return; }
+  if(q("[data-pass]")) return sendAction({k:"pass"});
+  if(q("[data-take]")) return sendAction({k:"take",cells:selCells.slice()});
+  if(q("[data-clear]")){ selCells=[]; selCard=null; privMode=false; render(); return; }
+  if(q("[data-buy]")){
+    const s=selCard; if(!s) return;
+    return sendAction(s.src==="d"?{k:"buy",src:"d",lvl:s.lvl,idx:s.idx}:{k:"buy",src:"r",idx:s.idx});
+  }
+  if(q("[data-reserve]")){
+    const s=selCard; if(!s) return;
+    const gold=selCells.length===1&&view.board[selCells[0]]===GOLD?selCells[0]:undefined;
+    return sendAction({k:"reserve",lvl:s.lvl,idx:s.src==="deck"?-1:s.idx,cell:gold});
+  }
+  if(q("#privBtn")){ privMode=!privMode; selCells=[]; render(); return; }
+  if(q("#refillBtn")){ return sendAction({k:"refill"}); }
+  if((el=q("[data-cell]"))){
+    if(!myTurn()) return;
+    const i=+el.dataset.cell, tok=view.board[i];
+    if(tok===null) return;
+    if(view.phase==="gem"){ if(tok===view.step.c) sendAction({k:"gem",cell:i}); return; }
+    if(view.phase!=="play") return;
+    if(privMode){ if(tok===GOLD) toast("Đặc quyền không lấy được vàng."); else sendAction({k:"priv",cell:i}); return; }
+    if(tok===GOLD){
+      if(myPl().res.length>=MAX_RES){ toast("Bạn đã giữ 3 lá, không lấy vàng được."); return; }
+      selCells = selCells.length===1&&selCells[0]===i ? [] : [i];
+      if(selCells.length&&selCard&&selCard.src!=="r") { /* giữ nguyên lá đã chọn */ }
+      render(); return;
+    }
+    if(selCells.length===1&&view.board[selCells[0]]===GOLD) selCells=[];
+    if(selCells.includes(i)) selCells=selCells.filter(x=>x!==i);
+    else {
+      const next=selCells.concat(i);
+      if(next.length>3){ toast("Tối đa 3 viên."); return; }
+      if(!lineOk(next)){ if(lineOk([i])&&selCells.length){ selCells=[i]; toast("Các viên phải liền nhau trên một đường thẳng — đã chọn lại từ viên này."); } }
+      else selCells=next;
+    }
+    render(); return;
+  }
+  if((el=q("[data-dl]"))){
+    if(!myTurn()||view.phase!=="play") return;
+    const l=+el.dataset.dl, i=+el.dataset.di; if(view.display[l][i]===null) return;
+    selCard = selCard&&selCard.src==="d"&&selCard.lvl===l&&selCard.idx===i ? null : {src:"d",lvl:l,idx:i};
+    renderMarket(); return;
+  }
+  if((el=q("[data-deck]"))){
+    if(!myTurn()||view.phase!=="play") return;
+    const l=+el.dataset.deck; if(!view.decks[l]) return;
+    selCard = selCard&&selCard.src==="deck"&&selCard.lvl===l ? null : {src:"deck",lvl:l};
+    renderMarket(); return;
+  }
+  if((el=q("[data-ri]"))){
+    if(!myTurn()||view.phase!=="play") return;
+    const i=+el.dataset.ri;
+    selCard = selCard&&selCard.src==="r"&&selCard.idx===i ? null : {src:"r",idx:i};
+    render(); return;
+  }
+});
+document.addEventListener("keydown",e=>{
+  if(!view||e.target.tagName==="INPUT") return;
+  if(e.key==="Escape"){ selCells=[]; selCard=null; privMode=false; render(); }
+  if(e.key==="Enter"&&myTurn()&&view.phase==="play"&&selCells.length&&lineOk(selCells)&&!selTokens().includes(GOLD)) sendAction({k:"take",cells:selCells.slice()});
+});
+
+function showEnd(){
+  const v=view, r=v.result; if(!r) return;
+  const me=v.me, ps=[me,1-me];
+  const title = r.winner===me ? "🏆 Bạn thắng!" : `${esc(v.names[r.winner])} thắng`;
+  openOverlay(`
+    <h2>${title}</h2>
+    <p class="tag" style="text-align:center;margin:0">${esc(v.names[r.winner])} ${REASON[r.reason]}.</p>
+    <table>
+      <tr><th></th>${ps.map(p=>`<th>${esc(v.names[p])}</th>`).join("")}</tr>
+      <tr><td>⭐ Điểm uy tín</td>${ps.map(p=>`<td>${pointsOf(v.pl[p])}</td>`).join("")}</tr>
+      <tr><td>👑 Vương miện</td>${ps.map(p=>`<td>${crownsOf(v.pl[p])}</td>`).join("")}</tr>
+      <tr><td>🎨 Điểm cao nhất một màu</td>${ps.map(p=>`<td>${Math.max(...colorPts(v.pl[p]))}</td>`).join("")}</tr>
+      <tr><td>Số lá đã mua</td>${ps.map(p=>`<td>${v.pl[p].cards.length}</td>`).join("")}</tr>
+    </table>
+    <div class="row">
+      <button class="btn green" id="againBtn">Chơi ván mới</button>
+      <button class="btn ghost" id="viewBoardBtn">Xem bàn</button>
+    </div>`, "end");
+  $("againBtn").onclick=()=>sendAction({k:"rematch"});
+  $("viewBoardBtn").onclick=closeOverlay;
+}
+
+function showRules(){
+  const sw=range(NG).map(c=>gemHTML(c)).join(" ");
+  openOverlay(`<h2>Luật Splendor Duel</h2><div class="rules">
+    <p>Hai thương nhân thi nhau mua lá bài trang sức. Có 25 viên: 4 viên mỗi màu ${sw}, 2 ngọc trai ${gemHTML(5)} và 3 vàng ${gemHTML(6)} (vàng thay được mọi loại khi trả).</p>
+    <h3>Thắng ngay cuối lượt nếu đạt một trong ba</h3>
+    <ul><li>⭐ <b>20 điểm uy tín</b>; hoặc 👑 <b>10 vương miện</b>; hoặc 🎨 <b>10 điểm</b> trên các lá cùng một màu.</li></ul>
+    <h3>Hành động tuỳ chọn (trước hành động bắt buộc)</h3>
+    <ul>
+      <li>📜 <b>Dùng đặc quyền</b>: trả 1 đặc quyền để lấy 1 viên bất kỳ trên bàn (không phải vàng). Dùng được nhiều đặc quyền.</li>
+      <li>♻ <b>Bổ sung bàn</b>: rải hết đá trong túi lên các ô trống theo hình xoắn ốc; <b>đối thủ nhận 1 đặc quyền</b>.</li>
+    </ul>
+    <h3>Hành động bắt buộc (chọn 1)</h3>
+    <ul>
+      <li><b>Lấy tới 3 viên</b> liền nhau trên một đường thẳng (ngang, dọc, chéo), không có ô trống và không lấy vàng. Nếu lấy 3 viên cùng màu hoặc 2 ngọc trai, đối thủ nhận 1 đặc quyền.</li>
+      <li><b>Lấy 1 vàng và giữ 1 lá</b> (lá ngửa trong chợ hoặc lá trên cùng của chồng úp). Giữ tối đa 3 lá.</li>
+      <li><b>Mua 1 lá</b> trong chợ hoặc lá đang giữ. Mỗi lá màu đã mua giảm giá vĩnh viễn 1 (hoặc 2) viên màu đó; ngọc trai không được giảm. Đá trả về túi.</li>
+    </ul>
+    <p>Nếu không làm được hành động bắt buộc nào, bạn phải bổ sung bàn. Cuối lượt chỉ được giữ tối đa <b>10 viên</b>.</p>
+    <h3>Khả năng của lá</h3>
+    <ul>
+      <li>↻ thêm một lượt · ＋ lấy 1 viên cùng màu lá trên bàn · 📜 nhận 1 đặc quyền · ✋ cướp 1 viên (không phải vàng) của đối thủ.</li>
+      <li>🌈 <b>Đa sắc</b>: khi mua, xếp vào một màu bạn đã có lá (cần có sẵn ít nhất 1 lá màu); thưởng và điểm tính cho màu đó.</li>
+      <li>Đặc quyền: có 3 cuộn. Khi được nhận mà trên bàn hết, lấy của đối thủ. Người đi sau bắt đầu với 1 đặc quyền.</li>
+      <li>👑 Đạt 3 và 6 vương miện: chọn 1 lá hoàng gia (2⭐ kèm khả năng, hoặc 3⭐).</li>
+    </ul>
+    <h3>Cách bấm</h3>
+    <ul><li>Bấm các viên trên bàn rồi bấm <b>Lấy</b> (Enter). Bấm một lá trong chợ để <b>Mua</b> hoặc <b>Giữ chỗ</b> (có thể chọn trước viên vàng muốn lấy). Lá viền xanh là lá bạn mua được ngay. Esc để huỷ chọn.</li></ul>
+    </div><div class="row"><button class="btn green" id="closeRules">Đã hiểu</button></div>`, "rules");
+  $("closeRules").onclick=closeOverlay;
+}
+
+/* ================= BOOT ================= */
+$("createBtn").onclick=createRoom;
+$("joinBtn").onclick=joinRoom;
+$("botBtn").onclick=playBot;
+$("rulesBtn0").onclick=showRules;
+$("rulesBtn").onclick=()=>{ const prev=overlayId; showRules(); if(prev==="end") $("closeRules").onclick=showEnd; };
+$("copyBtn").onclick=()=>{ navigator.clipboard.writeText(roomLink()).then(()=>toast("Đã sao chép link!"),()=>toast("Không sao chép được, hãy copy thủ công.")); };
+$("codeInput").addEventListener("keydown",e=>{ if(e.key==="Enter") joinRoom(); });
+try{ const n=localStorage.getItem("splendorduel-name"); if(n) $("nameInput").value=n; }catch(e){}
+const qs=new URLSearchParams(location.search);
+if(qs.get("room") && !qs.get("host")) $("codeInput").value=qs.get("room").toUpperCase();
+</script>
+</body>
+</html>
